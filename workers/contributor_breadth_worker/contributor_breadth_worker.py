@@ -17,7 +17,7 @@ class ContributorBreadthWorker(Worker):
         # Define what this worker can be given and know how to interpret
         # given is usually either [['github_url']] or [['git_url']] (depending if your 
         # worker is exclusive to repos that are on the GitHub platform)
-        given = [[]]
+        given = [['github_url']]
 
         # The name the housekeeper/broker use to distinguish the data model this worker can fill
         #   You will also need to name the method that does the collection for this model
@@ -47,7 +47,7 @@ class ContributorBreadthWorker(Worker):
         self.tool_version = '0.0.0'
         self.data_source = 'GitHub API'
 
-    def contributor_breadth_model(self, task):
+    def contributor_breadth_model(self, task, repo_id):
         """ This is just an example of a data collection method. All data collection 
             methods for all workers currently accept this format of parameters. If you 
             want to change these parameters, you can re-define the collect() method to 
@@ -69,11 +69,10 @@ class ContributorBreadthWorker(Worker):
 
         """
 
-        self.cntrb_repo_id_inc = self.get_max_id('contributor_repo', 'cntrb_repo_id')
-
+        print("Contributor Breadth Worker Entered")
 
         cntrb_login_query = s.sql.text("""
-            SELECT gh_login, cntrb_id 
+            SELECT DISTINCT gh_login, cntrb_id 
             FROM augur_data.contributors 
             WHERE gh_login IS NOT NULL
         """)
@@ -81,39 +80,40 @@ class ContributorBreadthWorker(Worker):
         cntrb_logins = json.loads(pd.read_sql(cntrb_login_query, self.db, \
             params={}).to_json(orient="records"))
 
-        self.logger.info("Beginning filling the contributor breadth model for this database: " + self.df + "\n")
+        action_map = {
+            'insert': {
+                'source': ['id'],
+                'augur': ['gh_issue_id']
+            }
+        }
 
         for cntrb in cntrb_logins:
 
-            repo_cntrb_url = "https://api.github.com/users/{}/events".format(cntrb['gh_login'])
+            repo_cntrb_url = f"https://api.github.com/users/{cntrb['gh_login']}/events"
 
-            # Get issues that we already have stored
-            #   Set pseudo key (something other than PK) to 
-            #   check dupicates with
-            table = 'contributor_repo'
-            table_pkey = 'cntrb_repo_id'
-            update_col_map = {} #'updated_at': 'updated_at', 'closed_at': 'closed_at'
-            duplicate_col_map = {}
+            source_cntrb_repos = self.paginate_endpoint(repo_cntrb_url, action_map=action_map,
+                 table=self.contributor_repo_table)
 
-            repo_cntrbs = self.paginate(repo_cntrb_url, duplicate_col_map, update_col_map, table, table_pkey)
+            if len(source_cntrb_repos['all']) == 0:
+                self.logger.info("There are no issues for this repository.\n")
+                self.register_task_completion(task, repo_id, 'contributor_breadth')
 
-            for repo_cntrb_dict in repo_cntrbs:
-
-                repo_cntrb_dict['cntrb_id'] = cntrb['cntrb_id']
-
-                repo_cntrb = {
-                    "cntrb_id": repo_cntrb_dict['cntrb_id']
-                    "repo_git": repo_cntrb_dict['repo']['url'],
-                    "repo_id": repo_cntrb_dict['repo']['id'],
-                    "repo_name": repo_cntrb_dict['repo']['name'],
-                    "event_id": repo_cntrb_dict['id'],
-                    "cntrb_category": repo_cntrb_dict['type'],
-                    "created_at": repo_cntrb_dict['created_at'],
+            cntrb_repos_insert = [
+                {
+                    "cntrb_id": cntrb_repo['cntrb_id']
+                    "repo_git": cntrb_repo['repo']['url'],
+                    "repo_id": cntrb_repo['repo']['id'],
+                    "repo_name": cntrb_repo['repo']['name'],
                     "tool_source": self.tool_source,
                     "tool_version": self.tool_version,
                     "data_source": self.data_source
-                }
+                } for cntrb_repo in source_cntrb_repos['insert']
+            ]
 
+            if len(source_cntrb_repos['insert']) > 0:
+
+                cntrb_repo_insert_result, cntrb_repo_update_result = self.bulk_insert(self.contributor_repo_table,
+                     unique_columns=action_map['insert']['augur'] insert=cntrb_repos_insert)
 
                 # id
                 # type
