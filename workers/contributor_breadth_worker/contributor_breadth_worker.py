@@ -32,8 +32,7 @@ class ContributorBreadthWorker(Worker):
         #   from the operations schema, these tables are to log worker task histories
         operations_tables = []
 
-        # Run the general worker initialization
-        super().__init__(worker_type, config, given, models, data_tables, operations_tables)
+        
 
         # Do any additional configuration after the general initialization has been run
         self.config.update(config)
@@ -46,6 +45,10 @@ class ContributorBreadthWorker(Worker):
         self.tool_source = 'Contributor Breadth Worker'
         self.tool_version = '0.0.0'
         self.data_source = 'GitHub API'
+
+        # Run the general worker initialization
+        super().__init__(worker_type, config, given, models, data_tables, operations_tables)
+
 
     def contributor_breadth_model(self, task, repo_id):
         """ This is just an example of a data collection method. All data collection 
