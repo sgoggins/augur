@@ -19,7 +19,7 @@ setup(
     license='MIT',
     author="AugurLabs",
     author_email="gabe@gabehe.im",
-    description="Template worker to be used as an example",
+    description="Augur worker that collects the repos people have contirbuted to",
     packages=find_packages(),
     install_requires=[
         'flask',
@@ -28,7 +28,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'api_worker_start=workers.contributor_breadth_worker.runtime:main',
+            'contributor_breadth_worker_start=workers.contributor_breadth_worker.runtime:main',
         ],
     },
     classifiers=[

@@ -32,11 +32,6 @@ class ContributorBreadthWorker(Worker):
         #   from the operations schema, these tables are to log worker task histories
         operations_tables = []
 
-        
-
-        # Do any additional configuration after the general initialization has been run
-        self.config.update(config)
-
         # If you need to do some preliminary interactions with the database, these MUST go
         # in the model method. The database connection is instantiated only inside of each 
         # data collection process
@@ -48,6 +43,15 @@ class ContributorBreadthWorker(Worker):
 
         # Run the general worker initialization
         super().__init__(worker_type, config, given, models, data_tables, operations_tables)
+
+        # Define data collection info
+        self.tool_source = 'Contributor Breadth Worker'
+        self.tool_version = '0.0.0'
+        self.data_source = 'GitHub API'
+
+        # Do any additional configuration after the general initialization has been run
+        self.config.update(config)
+
 
 
     def contributor_breadth_model(self, task, repo_id):
@@ -72,7 +76,7 @@ class ContributorBreadthWorker(Worker):
 
         """
 
-        print("Contributor Breadth Worker Entered")
+        logging.info("Starting contributor_breadth_model")
 
         cntrb_login_query = s.sql.text("""
             SELECT DISTINCT gh_login, cntrb_id 
@@ -85,8 +89,8 @@ class ContributorBreadthWorker(Worker):
 
         action_map = {
             'insert': {
-                'source': ['id'],
-                'augur': ['gh_issue_id']
+                'source': ['repo']['id'],
+                'augur': ['gh_repo_id']
             }
         }
 
@@ -103,10 +107,11 @@ class ContributorBreadthWorker(Worker):
 
             cntrb_repos_insert = [
                 {
-                    "cntrb_id": cntrb_repo['cntrb_id']
+                    "cntrb_id": cntrb['cntrb_id'],
                     "repo_git": cntrb_repo['repo']['url'],
                     "repo_id": cntrb_repo['repo']['id'],
                     "repo_name": cntrb_repo['repo']['name'],
+                    "gh_repoo_id": cntrb_repo['repo']['id']
                     "tool_source": self.tool_source,
                     "tool_version": self.tool_version,
                     "data_source": self.data_source
@@ -116,7 +121,7 @@ class ContributorBreadthWorker(Worker):
             if len(source_cntrb_repos['insert']) > 0:
 
                 cntrb_repo_insert_result, cntrb_repo_update_result = self.bulk_insert(self.contributor_repo_table,
-                     unique_columns=action_map['insert']['augur'] insert=cntrb_repos_insert)
+                     unique_columns=action_map['insert']['augur'], insert=cntrb_repos_insert)
 
                 # id
                 # type
