@@ -48,7 +48,6 @@ setup(
         "certifi", 
         "distlib", 
         "distro", 
-        "pkg_resources", 
         "progress", 
         "ipaddr", 
         "webencodings", 
