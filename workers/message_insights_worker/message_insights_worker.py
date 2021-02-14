@@ -23,6 +23,8 @@ from xlrd import open_workbook
 from augur import ROOT_AUGUR_DIRECTORY
 from workers.message_insights_worker.preprocess_text import \
     CONTRACTION_MAP as contraction_map
+
+from workers.worker_base import Worker
 # End of initial imports
 
 
@@ -35,7 +37,37 @@ warnings.filterwarnings('ignore')
 # Wrong way to specify
 # XGBClassifier.set_config()
 
-class MessageInsightsWorker():
+class MessageInsightsWorker(Worker):
+
+    def __init__(self, config={}):
+
+        worker_type = 'message_insights_worker'
+
+        given = [[]]
+        models = ['issues']
+
+        data_tables = ['contributors', 'issues', 'issue_labels', 'message',
+            'issue_message_ref', 'issue_events','issue_assignees','contributors_aliases',
+            'pull_request_assignees', 'pull_request_events', 'pull_request_reviewers', 'pull_request_meta',
+            'pull_request_repo']
+        operations_tables = ['worker_history', 'worker_job']
+
+        # These 3 are included in every tuple the worker inserts (data collection info)
+        self.tool_source = 'GitHub API Worker'
+        self.tool_version = '1.0.0'
+        self.data_source = 'GitHub API'
+
+        self.finishing_task = True # if we are finishing a previous task, pagination works differenty
+        self.platform_id = 25150 # GitHub
+
+        self.process_count = 1
+
+        self.deep_collection = True
+
+        # Run the general worker initialization
+        super().__init__(worker_type, config, given, models, data_tables, operations_tables)
+
+    # nlkt.download('stopwords')
 
     # Initial setup of machine learning functionality
     CONTRACTION_MAP = contraction_map
