@@ -18,7 +18,9 @@ from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.utils import compute_sample_weight
 from xgboost import XGBClassifier
-from openpyxl import load_workbook
+from xlrd import open_workbook
+
+# from openpyxl import load_workbook
 
 from augur import ROOT_AUGUR_DIRECTORY
 from workers.message_insights_worker.preprocess_text import \
@@ -254,14 +256,14 @@ class SentiCR:
 
         return model
 
-    def read_data_from_oracle(self):     
-        workbook = load_workbook(os.path.join(train_path,"custom_dataset.xlsx"))
-        sheet = workbook.active
+    def read_data_from_oracle(self):
+        workbook = open_workbook(os.path.join(train_path,"custom_dataset.xls"))
+        sheet = workbook.sheet_by_index(0)
         oracle_data = []
-        self.logger.info(f"Reading training data from 'train_data/custom_dataset.xlsx'...")
-        for cell_num in range(1, sheet.max_row):
-            comments = SentimentData(sheet.cell(row=cell_num, column=1).value,
-             sheet.cell(row=cell_num, column=2).value)
+        self.logger.info(f"Reading training data from 'train_data/custom_dataset.xls'...")
+        for cell_num in range(0, sheet.nrows):
+            comments = SentimentData(sheet.cell(
+                cell_num, 0).value, sheet.cell(cell_num, 1).value)
             oracle_data.append(comments)
         return oracle_data
 

@@ -112,7 +112,7 @@ class MessageInsightsWorker(Worker):
             self.begin_date = df_past['msg_timestamp'].iloc[-1]
 
             # Assign new run_id for every run
-            self.run_id = self.get_max_id('message_analysis', 'run_id')
+            self.run_id = self.get_max_id('message_analysis', 'worker_run_id')
             
             self.logger.info(f'Last analyzed msg_id of repo {repo_id} is {df_past["msg_id"].iloc[-1]}')
             self.logger.info(f'Fetching recent messages from {self.begin_date} of repo {repo_id}...\n')
@@ -231,11 +231,17 @@ class MessageInsightsWorker(Worker):
             df_trend['date'] =  pd.to_datetime(df_trend["msg_timestamp"])
             df_trend = df_trend.drop(['msg_timestamp'],axis=1)
             df_trend = df_trend.sort_values(by='date')
-            print(df_trend[['date', 'senti-label']].to_string())
 
             self.logger.info('Started 1D groupings to get insights')
             # Fetch the insight values of most recent specified insight_days
-            df_insight = df_trend.groupby(pd.Grouper(key='date', freq='1D'))['senti_label'].value_counts().unstack()
+            # grouping = pd.Grouper(key='date', freq='1D')
+            # df_insight = df_trend.groupby(grouping)['senti_label']
+            # df_insight = df_insight.value_counts()
+            # df_insight = df_insight.unstack()
+
+            df_insight = df_trend.groupby(pd.Grouper(key='date', freq='1D'))['senti_label'].apply(lambda x : x.value_counts()).unstack()
+
+            # df_insight = df_trend.groupby(pd.Grouper(key='date', freq='1D'))['senti_label'].value_counts().unstack()
             df_insight = df_insight.fillna(0)
             df_insight['Total'] = df_insight.sum(axis=1)
             df_insight = df_insight[df_insight.index >= self.begin_date]
