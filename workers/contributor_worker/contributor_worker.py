@@ -28,7 +28,8 @@ class ContributorWorker(Worker):
 
         data_tables = ['contributors', 'contributors_aliases', 'contributor_affiliations',
             'issue_events', 'pull_request_events', 'issues', 'message', 'issue_assignees',
-            'pull_request_assignees', 'pull_request_reviewers', 'pull_request_meta', 'pull_request_repo']
+            'pull_request_assignees', 'pull_request_reviewers', 'pull_request_meta', 'pull_request_repo', 
+            'pull_requests']
         operations_tables = ['worker_history', 'worker_job']
 
         # Run the general worker initialization
@@ -642,6 +643,7 @@ class ContributorWorker(Worker):
         reporter_col = {'reporter_id': new_id}
         pr_assignee_col = {'contrib_id': new_id}
         pr_repo_col = {'pr_cntrb_id': new_id}
+        pr_col = {'pr_augur_contributor_id': new_id}
 
         # def delete_fk(table, column):
 
@@ -703,5 +705,10 @@ class ContributorWorker(Worker):
         pr_repo_result = self.db.execute(self.pull_request_repo_table.update().where(
             self.pull_request_repo_table.c.pr_cntrb_id.in_(dupe_ids)).values(pr_repo_col))
         self.logger.info("Updated cntrb_id column for tuple in the pull_request_repo table with value: {} replaced with new cntrb id: {}".format(new_id, self.cntrb_id_inc))
+
+        pr_result = self.db.execute(self.pull_requests_table.update().where(
+            self.pull_requests_table.c.pr_augur_contributor_id.in_(dupe_ids)).values(pr_col))
+        self.logger.info("Updated pr_augur_contributor_id column for tuple in the pull_requests table with value: {} replaced with new cntrb id: {}".format(new_id, self.cntrb_id_inc))
+
 
         self.logger.info('Done mapping new id.\n')
