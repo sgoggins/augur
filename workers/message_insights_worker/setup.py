@@ -32,11 +32,11 @@ setup(
         'scipy',
         'emoji',
         'keras',
-        'tensorflow==2.2.0',
+        'tensorflow==2.4.1',
         'h5py',
         'scikit-image',
         'joblib',
-        'xgboost==0.90',
+        'xgboost==1.3.3',
         'bs4', 
         'xlrd'
     ],

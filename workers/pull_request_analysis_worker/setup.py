@@ -32,7 +32,7 @@ setup(
         'scipy',
         'emoji',
         'joblib',
-        'xgboost==0.90'
+        'xgboost'
     ],
     entry_points={
         'console_scripts': [
